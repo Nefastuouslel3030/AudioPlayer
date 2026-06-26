@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonStream WebPlayer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="player-container">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('player')"><i class="fas fa-music"></i> Reproductor</button>
+            <button class="tab-btn" onclick="switchTab('equalizer')"><i class="fas fa-sliders-h"></i> Ecualizador</button>
+            <button class="tab-btn" onclick="switchTab('online')"><i class="fas fa-globe"></i> Música Online</button>
+        </div>
+
+        <div id="player" class="tab-content active">
+            <canvas id="visualizer"></canvas>
+            
+            <div class="player-ui">
+                <h2 id="track-title">Selecciona una canción</h2>
+                <input type="file" id="local-file" accept="audio/*" style="display:none;">
+                <button class="btn" onclick="document.getElementById('local-file').click()"><i class="fas fa-folder-open"></i> Cargar Archivo Local</button>
+                
+                <div class="controls">
+                    <button class="control-btn" id="btn-play"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="equalizer" class="tab-content">
+            <h3>Ecualizador Gráfico</h3>
+            <div class="eq-container">
+                <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="0"><span>60Hz</span></div>
+                <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="1"><span>230Hz</span></div>
+                <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="2"><span>910Hz</span></div>
+                <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="3"><span>4kHz</span></div>
+                <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="4"><span>14kHz</span></div>
+            </div>
+        </div>
+
+        <div id="online" class="tab-content">
+            <h3>Buscar Música Libre (Jamendo API / Archivos Online)</h3>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Ej. Rock, Electronic...">
+                <button class="btn" onclick="searchOnlineMusic()">Buscar</button>
+            </div>
+            <ul id="online-results"></ul>
+        </div>
+    </div>
+
+    <audio id="audio-element" crossOrigin="anonymous"></audio>
+
+    <script src="app.js"></script>
+</body>
+</html>
