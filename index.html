@@ -13,14 +13,27 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('player')"><i class="fas fa-music"></i> Reproductor</button>
             <button class="tab-btn" onclick="switchTab('equalizer')"><i class="fas fa-sliders-h"></i> Ecualizador</button>
-            <button class="tab-btn" onclick="switchTab('online')"><i class="fas fa-globe"></i> Música Online</button>
+            <button class="tab-btn" onclick="switchTab('online')"><i class="fas fa-globe"></i> MÃºsica Online</button>
         </div>
 
         <div id="player" class="tab-content active">
             <canvas id="visualizer"></canvas>
             
             <div class="player-ui">
-                <h2 id="track-title">Selecciona una canción</h2>
+                <div class="player-ui">
+    <div class="cover-container">
+        <img id="cover-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500" alt="Portada">
+    </div>
+
+    <h2 id="track-title">Selecciona una canciÃ³n</h2>
+    <input type="file" id="local-file" accept="audio/*" style="display:none;">
+    <button class="btn" onclick="document.getElementById('local-file').click()"><i class="fas fa-folder-open"></i> Cargar Archivo Local</button>
+    
+    <div class="controls">
+        <button class="control-btn" id="btn-play"><i class="fas fa-play"></i></button>
+    </div>
+</div>
+                <h2 id="track-title">Selecciona una canciÃ³n</h2>
                 <input type="file" id="local-file" accept="audio/*" style="display:none;">
                 <button class="btn" onclick="document.getElementById('local-file').click()"><i class="fas fa-folder-open"></i> Cargar Archivo Local</button>
                 
@@ -31,7 +44,7 @@
         </div>
 
         <div id="equalizer" class="tab-content">
-            <h3>Ecualizador Gráfico</h3>
+            <h3>Ecualizador GrÃ¡fico</h3>
             <div class="eq-container">
                 <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="0"><span>60Hz</span></div>
                 <div class="slider-wrapper"><input type="range" class="eq-slider" min="-10" max="10" value="0" data-filter="1"><span>230Hz</span></div>
@@ -42,7 +55,7 @@
         </div>
 
         <div id="online" class="tab-content">
-            <h3>Buscar Música Libre (Jamendo API / Archivos Online)</h3>
+            <h3>Buscar MÃºsica Libre (Jamendo API / Archivos Online)</h3>
             <div class="search-box">
                 <input type="text" id="search-input" placeholder="Ej. Rock, Electronic...">
                 <button class="btn" onclick="searchOnlineMusic()">Buscar</button>
