@@ -30,9 +30,9 @@
                         <div id="quality-container"></div>
                     </div>
                     
-                    <input type="file" id="local-file" accept="audio/*" style="display:none;">
+                    <input type="file" id="local-file" accept="audio/*" multiple style="display:none;">
                     <button class="btn btn-secondary" onclick="document.getElementById('local-file').click()">
-                        <i class="fas fa-folder-open"></i> Archivo Local
+                        <i class="fas fa-folder-open"></i> Cargar Archivos Locales
                     </button>
                 </div>
 
@@ -68,7 +68,13 @@
                 </div>
 
                 <div class="spatial-section">
-                    <h3>Sonido Espacial 8D</h3>
+                    <div class="spatial-header">
+                        <h3>Sonido Espacial 8D</h3>
+                        <label class="switch-container">
+                            <input type="checkbox" id="spatial-toggle" checked>
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
                     <div id="spatial-container">
                         <div id="user-dot" title="Tú (Centro)"></div>
                         <div id="sound-dot" title="Arrastra la fuente de sonido"></div>
@@ -101,6 +107,8 @@
     </div>
 
     <audio id="audio-element" crossOrigin="anonymous"></audio>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
