@@ -10,21 +10,18 @@ let colaDeReproduccion = [];
 let favoritos = JSON.parse(localStorage.getItem('player_favorites')) || [];
 let indiceActual = 0;
 
-// Nodos del Sistema Web Audio
+// Estado del Sistema Web Audio e Interruptor
 let audioCtx, analyser, source, volumeNode;
-let filters = [];          // Para el Ecualizador
-let pannerNode;           // Para el Panning Estéreo
-let filtroDistancia;      // Para el Low Pass Filter espacial
-
-// Nodos del Motor de Reverb/Eco Algorítmico (8D Mejorado)
+let filters = [];          
+let pannerNode;           
+let filtroDistancia;      
 let reverbGainNode, delayNode, delayFeedback;
 
-// Estado del arrastre (Drag & Drop)
+let sonidoEspacialActivo = true; // Interruptor del 8D
 let isDragging = false;
 const spatialContainer = document.getElementById('spatial-container');
 const soundDot = document.getElementById('sound-dot');
 
-// Cargar UI inicial de llaves guardadas al arrancar
 document.addEventListener("DOMContentLoaded", () => {
     ajustarDimensionesCanvas();
     const inputKey = document.getElementById('api-jamendo-key');
@@ -32,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
         inputKey.value = localStorage.getItem('jamendo_key');
     }
     setupBarrasProgreso();
+    setupToggleEspacial(); // Activa el listener del On/Off
 });
 
 function ajustarDimensionesCanvas() {
@@ -66,21 +64,18 @@ function initAudioEngine() {
     filtroDistancia.type = 'lowpass';
     filtroDistancia.frequency.value = 20000;
 
-    // --- REVERB ALGORÍTMICO NATIVO (Sin archivos externos) ---
     reverbGainNode = audioCtx.createGain();
     reverbGainNode.gain.value = 0; 
     
     delayNode = audioCtx.createDelay();
-    delayNode.delayTime.value = 0.18; // Retraso de simulación de sala
+    delayNode.delayTime.value = 0.18; 
     
     delayFeedback = audioCtx.createGain();
-    delayFeedback.gain.value = 0.35; // Nivel de eco interno
+    delayFeedback.gain.value = 0.35; 
 
-    // Bucle del eco
     delayNode.connect(delayFeedback);
     delayFeedback.connect(delayNode);
 
-    // --- CONFIGURACIÓN DEL ECUALIZADOR (5 BANDAS) ---
     const frecuencias = [60, 230, 910, 4000, 14000];
     let lastFilter = source;
 
@@ -96,15 +91,12 @@ function initAudioEngine() {
         lastFilter = filter;
     });
 
-    // --- ENCADENAMIENTO DE NODOS ---
-    // Cadena Principal: Source -> EQ -> Panner -> Filtro Spat -> Volume (Fade) -> Analyser -> Parlantes
     lastFilter.connect(pannerNode);
     pannerNode.connect(filtroDistancia);
     filtroDistancia.connect(volumeNode);
     volumeNode.connect(analyser);
     analyser.connect(audioCtx.destination);
 
-    // Ruta paralela para Reverb Espacial (Inyecta el eco en base a distancia)
     filtroDistancia.connect(reverbGainNode);
     reverbGainNode.connect(delayNode);
     delayNode.connect(audioCtx.destination);
@@ -112,9 +104,6 @@ function initAudioEngine() {
     setupVisualizer();
 }
 
-// ==========================================
-// 4. VISUALIZADOR DE FONDO (CAMUFLADO)
-// ==========================================
 function setupVisualizer() {
     analyser.fftSize = 128;
     const bufferLength = analyser.frequencyBinCount;
@@ -133,7 +122,6 @@ function setupVisualizer() {
 
         for (let i = 0; i < bufferLength; i++) {
             barHeight = dataArray[i] / 1.4;
-            // Suavizado dinámico por hardware de opacidad de color
             ctx.fillStyle = `rgba(29, 185, 84, ${barHeight / 240})`; 
             ctx.fillRect(x, canvas.height - barHeight, barWidth - 2, barHeight);
             x += barWidth;
@@ -148,23 +136,45 @@ function setupVisualizer() {
 function actualizarSonidoEspacial(x, y) {
     if (!audioCtx) return;
 
-    // 1. Efecto Panning Estéreo Estándar
+    // Si el interruptor está apagado, forzar sonido estéreo normal plano
+    if (!sonidoEspacialActivo) {
+        pannerNode.pan.setValueAtTime(0, audioCtx.currentTime);
+        reverbGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        filtroDistancia.frequency.setValueAtTime(20000, audioCtx.currentTime);
+        return;
+    }
+
     pannerNode.pan.setValueAtTime(x, audioCtx.currentTime);
     
-    // 2. Cálculo matemático de distancia euclidiana al centro (0,0)
     const distancia = Math.sqrt(x * x + y * y); 
     const maxDistancia = Math.sqrt(2); 
     const factorDistancia = Math.min(distancia / maxDistancia, 1); 
 
-    // Al alejarse, sube el volumen del eco/reverb nativo
     reverbGainNode.gain.setValueAtTime(factorDistancia * 0.5, audioCtx.currentTime);
 
-    // Filtro Lowpass Dinámico: Ahoga agudos y los bajos se vuelven pesados y envolventes
     const de20k_a_1k = 20000 - (factorDistancia * 18800);
     filtroDistancia.frequency.setValueAtTime(de20k_a_1k, audioCtx.currentTime);
 }
 
-// Gestión del mouse para interactuar en el espacio
+// Control On/Off de sonido espacial
+function setupToggleEspacial() {
+    document.getElementById('spatial-toggle').addEventListener('change', (e) => {
+        sonidoEspacialActivo = e.target.checked;
+        if (!sonidoEspacialActivo && audioCtx) {
+            // Resetear el motor de audio inmediatamente a su estado plano
+            pannerNode.pan.setValueAtTime(0, audioCtx.currentTime);
+            reverbGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            filtroDistancia.frequency.setValueAtTime(20000, audioCtx.currentTime);
+            
+            // Regresar visualmente el punto blanco al centro
+            if (soundDot && spatialContainer) {
+                soundDot.style.left = "50%";
+                soundDot.style.top = "25%";
+            }
+        }
+    });
+}
+
 if (spatialContainer && soundDot) {
     spatialContainer.addEventListener('mousedown', () => isDragging = true);
     window.addEventListener('mouseup', () => isDragging = false);
@@ -183,7 +193,6 @@ if (spatialContainer && soundDot) {
         soundDot.style.left = `${posX}px`;
         soundDot.style.top = `${posY}px`;
 
-        // Normalizar los valores al plano cartesiano (-1 a 1)
         const normalizedX = ((posX / rect.width) * 2) - 1;
         const normalizedY = -(((posY / rect.height) * 2) - 1); 
 
@@ -192,11 +201,11 @@ if (spatialContainer && soundDot) {
 }
 
 // ==========================================
-// 6. CONTROLADORES PRO (TRANSICIÓN DE SPOTIFY, DEEZER)
+// 6. CONTROLADORES PRO
 // ==========================================
 function alternarReproduccionSuave() {
     initAudioEngine();
-    const fadeTime = 0.35; // Rampa de 350ms para evitar clicks acústicos
+    const fadeTime = 0.35; 
 
     if (audio.paused) {
         volumeNode.gain.setValueAtTime(0, audioCtx.currentTime);
@@ -211,7 +220,6 @@ function alternarReproduccionSuave() {
     }
 }
 
-// Barra de progreso interactiva
 function setupBarrasProgreso() {
     const progressBar = document.getElementById('progress-bar');
     
@@ -238,8 +246,73 @@ function formatTime(secs) {
 }
 
 // ==========================================
-// 7. GESTIÓN DE APIS, BÚSQUEDA Y PORTADAS
+// 7. GESTIÓN DE APIS, BÚSQUEDA Y PORTADAS REALES
 // ==========================================
+
+// Promesa para leer metadatos e imagen interna de un archivo local
+function procesarArchivoLocal(file, urlBlob, nameClean) {
+    return new Promise((resolve) => {
+        const defaultCover = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500';
+        
+        // Si por algún motivo la librería jsmediatags falla o no carga
+        if (!window.jsmediatags) {
+            resolve({ url: urlBlob, nombre: nameClean, portadaUrl: defaultCover });
+            return;
+        }
+
+        window.jsmediatags.read(file, {
+            onSuccess: function(tag) {
+                let portadaUrl = defaultCover;
+                const image = tag.tags.picture;
+                
+                // Si el archivo tiene una carátula binaria incrustada
+                if (image) {
+                    const byteArray = new Uint8Array(image.data);
+                    const blob = new Blob([byteArray], { type: image.format });
+                    portadaUrl = URL.createObjectURL(blob); // Convierte los datos binarios en imagen real
+                }
+                
+                const titulo = tag.tags.title || nameClean;
+                const artista = tag.tags.artist ? ` - ${tag.tags.artist}` : "";
+                
+                resolve({ url: urlBlob, nombre: titulo + artista, portadaUrl: portadaUrl });
+            },
+            onError: function(error) {
+                // Si el archivo no tiene metadatos, resuelve con datos por defecto
+                resolve({ url: urlBlob, nombre: nameClean, portadaUrl: defaultCover });
+            }
+        });
+    });
+}
+
+// EVENTO DE CARGA DE ARCHIVOS CORREGIDO (MÚLTIPLES ARCHIVOS)
+document.getElementById('local-file').addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (files.length === 0) return;
+    
+    initAudioEngine();
+    const colaEstabaVacia = colaDeReproduccion.length === 0;
+
+    // Bucle asíncrono para leer uno a uno los archivos cargados en lote
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const urlBlob = URL.createObjectURL(file);
+        const nameClean = file.name.replace(/\.[^/.]+$/, "");
+        
+        const cancionProcesada = await procesarArchivoLocal(file, urlBlob, nameClean);
+        colaDeReproduccion.push(cancionProcesada);
+    }
+    
+    actualizarInterfazCola();
+    
+    // Si no había nada reproduciéndose, arranca la primera canción del lote inmediatamente
+    if (colaEstabaVacia) {
+        indiceActual = colaDeReproduccion.length - files.length;
+        const pistaAArrancar = colaDeReproduccion[indiceActual];
+        reproducirInmediato(pistaAArrancar.url, pistaAArrancar.nombre, pistaAArrancar.portadaUrl);
+    }
+});
+
 async function searchOnlineMusic() {
     const query = document.getElementById('search-input').value;
     if (!query) return;
@@ -253,7 +326,7 @@ async function searchOnlineMusic() {
         resultsUl.innerHTML = '';
 
         if(!data.results || data.results.length === 0) {
-            resultsUl.innerHTML = '<li style="padding:20px; color:#666; text-align:center;">Sin resultados. Verifica tu API key.</li>';
+            resultsUl.innerHTML = '<li style="padding:20px; color:#666; text-align:center;">Sin resultados.</li>';
             return;
         }
 
@@ -276,7 +349,7 @@ async function searchOnlineMusic() {
             resultsUl.appendChild(li);
         });
     } catch (err) {
-        console.error("Falla en la API de streaming remota:", err);
+        console.error("Falla en la API remota:", err);
     }
 }
 
@@ -284,11 +357,10 @@ function reproducirInmediato(url, nombre, portadaUrl) {
     initAudioEngine();
     audio.src = url;
     document.getElementById('track-title').innerText = nombre;
-    
-    // Cambiar carátula e inyectar el indicador Tidal de calidad
     document.getElementById('cover-art').src = portadaUrl;
+    
     document.getElementById('quality-container').innerHTML = url.includes('blob:') ? 
-        '<span class="badge-quality">Hi-Fi Flac</span>' : '<span class="badge-quality">HQ MP3</span>';
+        '<span class="badge-quality">Hi-Fi Mapped</span>' : '<span class="badge-quality">HQ MP3</span>';
 
     volumeNode.gain.setValueAtTime(0, audioCtx.currentTime);
     audio.play();
@@ -318,7 +390,6 @@ function actualizarInterfazCola() {
     });
 }
 
-// Favoritos estilo SoundCloud
 function toggleLike(trackUrl, trackName) {
     const index = favoritos.findIndex(f => f.url === trackUrl);
     const btns = document.querySelectorAll(`[data-url="${trackUrl}"] .btn-heart`);
@@ -337,10 +408,9 @@ function guardarAPIKeys() {
     const key = document.getElementById('api-jamendo-key').value.trim();
     localStorage.setItem('jamendo_key', key || '549df9c9');
     JAMENDO_CLIENT_ID = key || '549df9c9';
-    alert("API Key procesada y guardada.");
+    alert("API Key procesada.");
 }
 
-// Auto-play continuo de la cola de reproducción
 audio.addEventListener('ended', () => {
     if (indiceActual + 1 < colaDeReproduccion.length) {
         indiceActual++;
@@ -350,18 +420,6 @@ audio.addEventListener('ended', () => {
     }
 });
 
-// Listener para carga de archivos desde la computadora
-document.getElementById('local-file').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const urlBlob = URL.createObjectURL(file);
-        const nameClean = file.name.replace(/\.[^/.]+$/, "");
-        const localCover = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500';
-        reproducirInmediato(urlBlob, nameClean, localCover);
-    }
-});
-
-// Eventos de controles directos
 document.getElementById('btn-play').addEventListener('click', alternarReproduccionSuave);
 
 document.querySelectorAll('.eq-slider').forEach(slider => {
