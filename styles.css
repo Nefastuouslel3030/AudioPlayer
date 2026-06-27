@@ -1,0 +1,403 @@
+:root {
+    --bg-dark: #0b0b0b;
+    --bg-panel: #121212;
+    --bg-card: #181818;
+    --bg-hover: #282828;
+    --green-neon: #1DB954;
+    --text-main: #ffffff;
+    --text-muted: #a7a7a7;
+    --smooth: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.player-container {
+    width: 780px;
+    height: 520px;
+    background: var(--bg-panel);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #1f1f1f;
+}
+
+#visualizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    opacity: 0.12;
+    pointer-events: none;
+}
+
+.tabs {
+    display: flex;
+    background: #070707;
+    z-index: 2;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 16px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: var(--smooth);
+}
+
+.tab-btn:hover, .tab-btn.active {
+    color: var(--green-neon);
+    background: var(--bg-panel);
+}
+
+.tab-content {
+    display: none;
+    padding: 24px;
+    flex: 1;
+    z-index: 2;
+    overflow-y: auto;
+}
+
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* PESTAÑA REPRODUCIR (SPLITS Y CONTROLES) */
+.player-splits {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+}
+
+.player-ui {
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.cover-container {
+    width: 170px;
+    height: 170px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(29, 185, 84, 0.15);
+    border: 2px solid #222;
+    transition: var(--smooth);
+}
+
+.cover-container:hover {
+    transform: scale(1.04);
+    box-shadow: 0 10px 35px rgba(29, 185, 84, 0.3);
+}
+
+#cover-art {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.track-meta {
+    text-align: center;
+    margin: 15px 0;
+    width: 100%;
+}
+
+#track-title {
+    font-size: 18px;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-quality {
+    background: #111;
+    border: 1px solid var(--green-neon);
+    color: var(--green-neon);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+
+.btn {
+    background: var(--green-neon);
+    color: black;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 24px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: var(--smooth);
+}
+
+.btn-secondary {
+    background: #242424;
+    color: white;
+}
+
+.btn:hover {
+    transform: scale(1.04);
+    filter: brightness(1.1);
+}
+
+.queue-panel {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #222;
+}
+
+.queue-panel h3 { margin-top: 0; font-size: 15px; color: var(--text-muted); }
+
+#playlist-queue {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.queue-item {
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: var(--smooth);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.queue-item:hover { background: var(--bg-hover); }
+.queue-item.active-track { color: var(--green-neon); font-weight: bold; }
+
+/* REPRODUCCIÓN INFERIOR */
+.bottom-controls {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.progress-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+#progress-bar {
+    flex: 1;
+    accent-color: var(--green-neon);
+    height: 4px;
+    cursor: pointer;
+}
+
+.control-buttons {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.control-btn {
+    background: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: var(--smooth);
+}
+
+.control-btn:hover { transform: scale(1.1); }
+
+/* FX Y EQUALIZADOR */
+.fx-grid {
+    display: flex;
+    gap: 30px;
+    height: 100%;
+}
+
+.eq-section, .spatial-section { flex: 1; }
+
+.eq-container {
+    display: flex;
+    justify-content: space-around;
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    height: 240px;
+    border: 1px solid #222;
+}
+
+.slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.eq-slider {
+    appearance: slider-vertical;
+    width: 8px;
+    height: 180px;
+    accent-color: var(--green-neon);
+    margin-bottom: 8px;
+}
+
+/* ESPACIAL 8D BOARD */
+#spatial-container {
+    background: #090909;
+    border: 1px solid #222;
+    border-radius: 12px;
+    height: 240px;
+    position: relative;
+    overflow: hidden;
+    background-image: radial-gradient(#151515 1px, transparent 1px);
+    background-size: 16px 16px;
+}
+
+#user-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--green-neon);
+    border-radius: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--green-neon);
+}
+
+#sound-dot {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    left: 50%;
+    top: 25%;
+    transform: translate(-50%, -50%);
+    cursor: move;
+    box-shadow: 0 0 12px white;
+    transition: transform 0.1s ease;
+}
+
+/* BUSCADOR PREMIUM */
+.search-bar-premium {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid #222;
+    border-radius: 30px;
+    padding: 6px 15px;
+    margin-bottom: 20px;
+    transition: var(--smooth);
+}
+
+.search-bar-premium:focus-within {
+    border-color: var(--green-neon);
+    box-shadow: 0 0 10px rgba(29,185,84,0.1);
+}
+
+.search-icon { color: var(--text-muted); margin-right: 10px; }
+
+#search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: white;
+    outline: none;
+    font-size: 14px;
+}
+
+.btn-search {
+    background: var(--green-neon);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.results-container {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid #222;
+    overflow-y: auto;
+}
+
+#online-results { list-style: none; padding: 0; margin: 0; }
+
+.search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #1a1a1a;
+    transition: var(--smooth);
+}
+
+.search-item:hover { background: var(--bg-hover); }
+
+.track-info { font-size: 14px; }
+
+.actions { display: flex; gap: 10px; }
+
+.mini-btn {
+    background: #252525;
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--smooth);
+    text-decoration: none;
+}
+
+.mini-btn:hover { background: #333; transform: scale(1.08); }
+.text-green { color: var(--green-neon); }
+.mini-btn.liked { color: #e91429; }
+
+/* SECCIÓN APIS */
+.api-box { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid #222; }
+.api-box label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.api-input-wrapper { display: flex; gap: 10px; }
+.api-input-wrapper input {
+    flex: 1; background: #090909; border: 1px solid #222; color: white; padding: 10px; border-radius: 8px; outline: none;
+}
+.api-input-wrapper input:focus { border-color: var(--green-neon); }

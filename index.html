@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonStream Studio Player</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="player-container">
+        <canvas id="visualizer"></canvas>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('player')"><i class="fas fa-play-circle"></i> Player</button>
+            <button class="tab-btn" onclick="switchTab('audio-fx')"><i class="fas fa-sliders-h"></i> Audio FX</button>
+            <button class="tab-btn" onclick="switchTab('online')"><i class="fas fa-search"></i> Buscar</button>
+            <button class="tab-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> APIs</button>
+        </div>
+
+        <div id="player" class="tab-content active">
+            <div class="player-splits">
+                <div class="player-ui">
+                    <div class="cover-container">
+                        <img id="cover-art" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=500" alt="Portada">
+                    </div>
+                    <div class="track-meta">
+                        <h2 id="track-title">Ninguna pista activa</h2>
+                        <div id="quality-container"></div>
+                    </div>
+                    
+                    <input type="file" id="local-file" accept="audio/*" style="display:none;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('local-file').click()">
+                        <i class="fas fa-folder-open"></i> Archivo Local
+                    </button>
+                </div>
+
+                <div class="queue-panel">
+                    <h3>Siguiente en la Lista</h3>
+                    <ul id="playlist-queue"></ul>
+                </div>
+            </div>
+
+            <div class="bottom-controls">
+                <div class="progress-area">
+                    <span id="current-time">0:00</span>
+                    <input type="range" id="progress-bar" min="0" max="100" value="0">
+                    <span id="total-duration">0:00</span>
+                </div>
+                <div class="control-buttons">
+                    <button class="control-btn" id="btn-play"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="audio-fx" class="tab-content">
+            <div class="fx-grid">
+                <div class="eq-section">
+                    <h3>Ecualizador Pro</h3>
+                    <div class="eq-container">
+                        <div class="slider-wrapper"><input type="range" class="eq-slider" min="-12" max="12" value="0" data-filter="0"><span>60Hz</span></div>
+                        <div class="slider-wrapper"><input type="range" class="eq-slider" min="-12" max="12" value="0" data-filter="1"><span>230Hz</span></div>
+                        <div class="slider-wrapper"><input type="range" class="eq-slider" min="-12" max="12" value="0" data-filter="2"><span>910Hz</span></div>
+                        <div class="slider-wrapper"><input type="range" class="eq-slider" min="-12" max="12" value="0" data-filter="3"><span>4kHz</span></div>
+                        <div class="slider-wrapper"><input type="range" class="eq-slider" min="-12" max="12" value="0" data-filter="4"><span>14kHz</span></div>
+                    </div>
+                </div>
+
+                <div class="spatial-section">
+                    <h3>Sonido Espacial 8D</h3>
+                    <div id="spatial-container">
+                        <div id="user-dot" title="Tú (Centro)"></div>
+                        <div id="sound-dot" title="Arrastra la fuente de sonido"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="online" class="tab-content">
+            <div class="search-bar-premium">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-input" placeholder="Buscar canciones, artistas, géneros...">
+                <button class="btn-search" onclick="searchOnlineMusic()">Buscar</button>
+            </div>
+            <div class="results-container">
+                <ul id="online-results"></ul>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h3>Configuración de Conectores</h3>
+            <div class="api-box">
+                <label for="api-jamendo-key">Jamendo Client ID (Streaming Libre)</label>
+                <div class="api-input-wrapper">
+                    <input type="password" id="api-jamendo-key" placeholder="Pega tu Client ID de Jamendo...">
+                    <button class="btn" onclick="guardarAPIKeys()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio-element" crossOrigin="anonymous"></audio>
+    <script src="app.js"></script>
+</body>
+</html>
