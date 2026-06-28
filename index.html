@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeonStream Studio Player</title>
+    <title>NeonStream Studio Player Pro</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Librería externa vía CDN para leer portadas y metadatos internos de tus archivos de audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
 </head>
 <body>
 
     <div class="player-container">
+        <!-- Lienzo del Visualizador que se camufla en el fondo absoluto -->
         <canvas id="visualizer"></canvas>
 
+        <!-- Barra de Navegación Superior -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('player')"><i class="fas fa-play-circle"></i> Player</button>
             <button class="tab-btn" onclick="switchTab('audio-fx')"><i class="fas fa-sliders-h"></i> Audio FX</button>
@@ -19,6 +23,7 @@
             <button class="tab-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> APIs</button>
         </div>
 
+        <!-- PESTAÑA 1: REPRODUCTOR PRINCIPAL -->
         <div id="player" class="tab-content active">
             <div class="player-splits">
                 <div class="player-ui">
@@ -30,18 +35,21 @@
                         <div id="quality-container"></div>
                     </div>
                     
+                    <!-- Atributo 'multiple' añadido para permitir subir muchas canciones de golpe -->
                     <input type="file" id="local-file" accept="audio/*" multiple style="display:none;">
                     <button class="btn btn-secondary" onclick="document.getElementById('local-file').click()">
-                        <i class="fas fa-folder-open"></i> Cargar Archivos Locales
+                        <i class="fas fa-folder-open"></i> Añadir Archivos Locales
                     </button>
                 </div>
 
+                <!-- Cola de Reproducción integrada al lado -->
                 <div class="queue-panel">
-                    <h3>Siguiente en la Lista</h3>
+                    <h3>Lista de Reproducción</h3>
                     <ul id="playlist-queue"></ul>
                 </div>
             </div>
 
+            <!-- Barra de Controles Inferior Integrada -->
             <div class="bottom-controls">
                 <div class="progress-area">
                     <span id="current-time">0:00</span>
@@ -54,8 +62,10 @@
             </div>
         </div>
 
+        <!-- PESTAÑA 2: AUDIO FX (ECUALIZADOR Y SONIDO ESPACIAL) -->
         <div id="audio-fx" class="tab-content">
             <div class="fx-grid">
+                <!-- Ecualizador -->
                 <div class="eq-section">
                     <h3>Ecualizador Pro</h3>
                     <div class="eq-container">
@@ -67,11 +77,13 @@
                     </div>
                 </div>
 
+                <!-- Sonido Espacial -->
                 <div class="spatial-section">
                     <div class="spatial-header">
                         <h3>Sonido Espacial 8D</h3>
+                        <!-- Interruptor de Encendido/Apagado -->
                         <label class="switch-container">
-                            <input type="checkbox" id="spatial-toggle" checked>
+                            <input type="checkbox" id="toggle-spatial" checked>
                             <span class="switch-slider"></span>
                         </label>
                     </div>
@@ -83,6 +95,7 @@
             </div>
         </div>
 
+        <!-- PESTAÑA 3: BÚSQUEDA ONLINE -->
         <div id="online" class="tab-content">
             <div class="search-bar-premium">
                 <i class="fas fa-search search-icon"></i>
@@ -94,6 +107,7 @@
             </div>
         </div>
 
+        <!-- PESTAÑA 4: APIS Y AJUSTES -->
         <div id="settings" class="tab-content">
             <h3>Configuración de Conectores</h3>
             <div class="api-box">
@@ -107,8 +121,6 @@
     </div>
 
     <audio id="audio-element" crossOrigin="anonymous"></audio>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
