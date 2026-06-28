@@ -9,15 +9,18 @@ let JAMENDO_CLIENT_ID = localStorage.getItem('jamendo_key') || '549df9c9';
 let colaDeReproduccion = [];
 let favoritos = JSON.parse(localStorage.getItem('player_favorites')) || [];
 let indiceActual = 0;
+let spatialEnabled = true; // Control del switch 8D
 
-// Estado del Sistema Web Audio e Interruptor
+// Nodos del Sistema Web Audio
 let audioCtx, analyser, source, volumeNode;
 let filters = [];          
 let pannerNode;           
 let filtroDistancia;      
+
+// Nodos de Reverb/Eco Algorítmico Nativo
 let reverbGainNode, delayNode, delayFeedback;
 
-let sonidoEspacialActivo = true; // Interruptor del 8D
+// Estado del arrastre (Spatial Audio)
 let isDragging = false;
 const spatialContainer = document.getElementById('spatial-container');
 const soundDot = document.getElementById('sound-dot');
@@ -29,7 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
         inputKey.value = localStorage.getItem('jamendo_key');
     }
     setupBarrasProgreso();
-    setupToggleEspacial(); // Activa el listener del On/Off
+
+    // Listener del Switch 8D
+    document.getElementById('toggle-spatial').addEventListener('change', (e) => {
+        spatialEnabled = e.target.checked;
+        if(!spatialEnabled) resetSonidoEspacial();
+    });
 });
 
 function ajustarDimensionesCanvas() {
@@ -48,7 +56,7 @@ function switchTab(tabId) {
 }
 
 // ==========================================
-// 3. MOTOR DE AUDIO CENTRAL (CONEXIONES PRO)
+// 3. MOTOR DE AUDIO CENTRAL
 // ==========================================
 function initAudioEngine() {
     if (audioCtx) return;
@@ -64,6 +72,7 @@ function initAudioEngine() {
     filtroDistancia.type = 'lowpass';
     filtroDistancia.frequency.value = 20000;
 
+    // REVERB ALGORÍTMICO NATIVO
     reverbGainNode = audioCtx.createGain();
     reverbGainNode.gain.value = 0; 
     
@@ -76,6 +85,7 @@ function initAudioEngine() {
     delayNode.connect(delayFeedback);
     delayFeedback.connect(delayNode);
 
+    // CONFIGURACIÓN DEL ECUALIZADOR (5 BANDAS)
     const frecuencias = [60, 230, 910, 4000, 14000];
     let lastFilter = source;
 
@@ -91,6 +101,7 @@ function initAudioEngine() {
         lastFilter = filter;
     });
 
+    // ENCADENAMIENTO
     lastFilter.connect(pannerNode);
     pannerNode.connect(filtroDistancia);
     filtroDistancia.connect(volumeNode);
@@ -104,6 +115,9 @@ function initAudioEngine() {
     setupVisualizer();
 }
 
+// ==========================================
+// 4. VISUALIZADOR DE FONDO (CAMUFLADO)
+// ==========================================
 function setupVisualizer() {
     analyser.fftSize = 128;
     const bufferLength = analyser.frequencyBinCount;
@@ -131,18 +145,10 @@ function setupVisualizer() {
 }
 
 // ==========================================
-// 5. SISTEMA DE SONIDO ESPACIAL (8D REALISTA)
+// 5. SISTEMA DE SONIDO ESPACIAL (8D CONFIGURABLE)
 // ==========================================
 function actualizarSonidoEspacial(x, y) {
-    if (!audioCtx) return;
-
-    // Si el interruptor está apagado, forzar sonido estéreo normal plano
-    if (!sonidoEspacialActivo) {
-        pannerNode.pan.setValueAtTime(0, audioCtx.currentTime);
-        reverbGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        filtroDistancia.frequency.setValueAtTime(20000, audioCtx.currentTime);
-        return;
-    }
+    if (!audioCtx || !spatialEnabled) return;
 
     pannerNode.pan.setValueAtTime(x, audioCtx.currentTime);
     
@@ -156,23 +162,11 @@ function actualizarSonidoEspacial(x, y) {
     filtroDistancia.frequency.setValueAtTime(de20k_a_1k, audioCtx.currentTime);
 }
 
-// Control On/Off de sonido espacial
-function setupToggleEspacial() {
-    document.getElementById('spatial-toggle').addEventListener('change', (e) => {
-        sonidoEspacialActivo = e.target.checked;
-        if (!sonidoEspacialActivo && audioCtx) {
-            // Resetear el motor de audio inmediatamente a su estado plano
-            pannerNode.pan.setValueAtTime(0, audioCtx.currentTime);
-            reverbGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            filtroDistancia.frequency.setValueAtTime(20000, audioCtx.currentTime);
-            
-            // Regresar visualmente el punto blanco al centro
-            if (soundDot && spatialContainer) {
-                soundDot.style.left = "50%";
-                soundDot.style.top = "25%";
-            }
-        }
-    });
+function resetSonidoEspacial() {
+    if (!audioCtx) return;
+    pannerNode.pan.setValueAtTime(0, audioCtx.currentTime);
+    reverbGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    filtroDistancia.frequency.setValueAtTime(20000, audioCtx.currentTime);
 }
 
 if (spatialContainer && soundDot) {
@@ -201,7 +195,7 @@ if (spatialContainer && soundDot) {
 }
 
 // ==========================================
-// 6. CONTROLADORES PRO
+// 6. CONTROLADORES AUDITIVOS PRO
 // ==========================================
 function alternarReproduccionSuave() {
     initAudioEngine();
@@ -246,72 +240,68 @@ function formatTime(secs) {
 }
 
 // ==========================================
-// 7. GESTIÓN DE APIS, BÚSQUEDA Y PORTADAS REALES
+// 7. MULTI-SUBIDA, COLA Y METADATOS ID3 (PORTADAS REALES)
 // ==========================================
-
-// Promesa para leer metadatos e imagen interna de un archivo local
-function procesarArchivoLocal(file, urlBlob, nameClean) {
-    return new Promise((resolve) => {
-        const defaultCover = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500';
-        
-        // Si por algún motivo la librería jsmediatags falla o no carga
-        if (!window.jsmediatags) {
-            resolve({ url: urlBlob, nombre: nameClean, portadaUrl: defaultCover });
-            return;
-        }
-
-        window.jsmediatags.read(file, {
-            onSuccess: function(tag) {
-                let portadaUrl = defaultCover;
-                const image = tag.tags.picture;
-                
-                // Si el archivo tiene una carátula binaria incrustada
-                if (image) {
-                    const byteArray = new Uint8Array(image.data);
-                    const blob = new Blob([byteArray], { type: image.format });
-                    portadaUrl = URL.createObjectURL(blob); // Convierte los datos binarios en imagen real
-                }
-                
-                const titulo = tag.tags.title || nameClean;
-                const artista = tag.tags.artist ? ` - ${tag.tags.artist}` : "";
-                
-                resolve({ url: urlBlob, nombre: titulo + artista, portadaUrl: portadaUrl });
-            },
-            onError: function(error) {
-                // Si el archivo no tiene metadatos, resuelve con datos por defecto
-                resolve({ url: urlBlob, nombre: nameClean, portadaUrl: defaultCover });
-            }
-        });
-    });
-}
-
-// EVENTO DE CARGA DE ARCHIVOS CORREGIDO (MÚLTIPLES ARCHIVOS)
 document.getElementById('local-file').addEventListener('change', async (e) => {
-    const files = e.target.files;
+    const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
-    initAudioEngine();
-    const colaEstabaVacia = colaDeReproduccion.length === 0;
 
-    // Bucle asíncrono para leer uno a uno los archivos cargados en lote
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const urlBlob = URL.createObjectURL(file);
-        const nameClean = file.name.replace(/\.[^/.]+$/, "");
-        
-        const cancionProcesada = await procesarArchivoLocal(file, urlBlob, nameClean);
+    initAudioEngine();
+    const eraColaVacia = colaDeReproduccion.length === 0;
+
+    // Procesar todos los archivos subidos al mismo tiempo
+    for (const file of files) {
+        const cancionProcesada = await extraerMetadatosLocal(file);
         colaDeReproduccion.push(cancionProcesada);
     }
-    
+
     actualizarInterfazCola();
-    
-    // Si no había nada reproduciéndose, arranca la primera canción del lote inmediatamente
-    if (colaEstabaVacia) {
-        indiceActual = colaDeReproduccion.length - files.length;
-        const pistaAArrancar = colaDeReproduccion[indiceActual];
-        reproducirInmediato(pistaAArrancar.url, pistaAArrancar.nombre, pistaAArrancar.portadaUrl);
+
+    // Si no había nada sonando, reproducir la primera de la nueva tanda automáticamente
+    if (eraColaVacia) {
+        indiceActual = 0;
+        const primera = colaDeReproduccion[0];
+        reproducirInmediato(primera.url, primera.nombre, primera.portadaUrl);
     }
 });
+
+// Promesa para parsear las portadas binarias internas de tus MP3/Audios
+function extraerMetadatosLocal(file) {
+    return new Promise((resolve) => {
+        const nombreLimpio = file.name.replace(/\.[^/.]+$/, "");
+        const portadaDefecto = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=500'; // Vinilo Vintage por defecto
+
+        // Usar la librería externa jsmediatags cargada en el HTML
+        if (window.jsmediatags) {
+            window.jsmediatags.read(file, {
+                onSuccess: function(tag) {
+                    const tags = tag.tags;
+                    const titulo = tags.title || nombreLimpio;
+                    let portadaUrl = portadaDefecto;
+
+                    // Si el archivo tiene una imagen incrustada de verdad
+                    if (tags.picture) {
+                        const { data, format } = tags.picture;
+                        let base64String = "";
+                        for (let i = 0; i < data.length; i++) {
+                            base64String += String.fromCharCode(data[i]);
+                        }
+                        // Conversión exitosa a URI de datos cargable en una etiqueta <img>
+                        portadaUrl = `data:${format};base64,${window.btoa(base64String)}`;
+                    }
+
+                    resolve({ url: URL.createObjectURL(file), nombre: titulo, portadaUrl, tipo: 'local' });
+                },
+                onError: function(error) {
+                    // Si falla el parseo o no tiene tags, retorna los datos básicos sin romperse
+                    resolve({ url: URL.createObjectURL(file), nombre: nombreLimpio, portadaUrl: portadaDefecto, tipo: 'local' });
+                }
+            });
+        } else {
+            resolve({ url: URL.createObjectURL(file), nombre: nombreLimpio, portadaUrl: portadaDefecto, tipo: 'local' });
+        }
+    });
+}
 
 async function searchOnlineMusic() {
     const query = document.getElementById('search-input').value;
@@ -326,7 +316,7 @@ async function searchOnlineMusic() {
         resultsUl.innerHTML = '';
 
         if(!data.results || data.results.length === 0) {
-            resultsUl.innerHTML = '<li style="padding:20px; color:#666; text-align:center;">Sin resultados.</li>';
+            resultsUl.innerHTML = '<li style="padding:20px; color:#666; text-align:center;">Sin resultados o API inválida.</li>';
             return;
         }
 
@@ -360,7 +350,7 @@ function reproducirInmediato(url, nombre, portadaUrl) {
     document.getElementById('cover-art').src = portadaUrl;
     
     document.getElementById('quality-container').innerHTML = url.includes('blob:') ? 
-        '<span class="badge-quality">Hi-Fi Mapped</span>' : '<span class="badge-quality">HQ MP3</span>';
+        '<span class="badge-quality">Hi-Fi Local</span>' : '<span class="badge-quality">HQ MP3</span>';
 
     volumeNode.gain.setValueAtTime(0, audioCtx.currentTime);
     audio.play();
@@ -369,7 +359,7 @@ function reproducirInmediato(url, nombre, portadaUrl) {
 }
 
 function agregarACola(url, nombre, portadaUrl) {
-    colaDeReproduccion.push({ url, nombre, portadaUrl });
+    colaDeReproduccion.push({ url, nombre, portadaUrl, tipo: 'online' });
     actualizarInterfazCola();
 }
 
@@ -408,7 +398,7 @@ function guardarAPIKeys() {
     const key = document.getElementById('api-jamendo-key').value.trim();
     localStorage.setItem('jamendo_key', key || '549df9c9');
     JAMENDO_CLIENT_ID = key || '549df9c9';
-    alert("API Key procesada.");
+    alert("API Key procesada y guardada.");
 }
 
 audio.addEventListener('ended', () => {
